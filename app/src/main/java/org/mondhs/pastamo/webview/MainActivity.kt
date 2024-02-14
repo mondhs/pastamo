@@ -1,4 +1,4 @@
-package imrankst1221.website.`in`.webview
+package org.mondhs.pastamo.webview
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -6,12 +6,13 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.ConnectivityManager
-import android.net.NetworkInfo
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
 import android.view.KeyEvent
@@ -22,17 +23,12 @@ import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatDelegate
 import java.io.File
 import java.io.IOException
-import java.io.UnsupportedEncodingException
-import java.security.InvalidAlgorithmParameterException
-import java.security.InvalidKeyException
 import java.security.NoSuchAlgorithmException
 import java.security.SecureRandom
 import java.security.spec.InvalidKeySpecException
-import java.security.spec.InvalidParameterSpecException
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.crypto.*
@@ -113,7 +109,7 @@ class MainActivity : Activity() {
 
         if (!mLoaded) {
             requestWebView()
-            Handler().postDelayed({
+            Handler(Looper.getMainLooper()).postDelayed({
                 prgs.visibility = View.VISIBLE
                 //viewSplash.getBackground().setAlpha(145);
                 mWebView.visibility = View.VISIBLE
@@ -129,7 +125,7 @@ class MainActivity : Activity() {
     }
 
     @SuppressLint("SetJavaScriptEnabled")
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    //@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private fun requestWebView() {
         /** Layout of webview screen View  */
         if (internetCheck(mContext)) {
@@ -148,12 +144,12 @@ class MainActivity : Activity() {
         mWebView.isFocusableInTouchMode = true
         mWebView.settings.javaScriptEnabled = true
         mWebView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
-        mWebView.settings.setRenderPriority(RenderPriority.HIGH)
+//        mWebView.settings.setRenderPriority(RenderPriority.HIGH)
         mWebView.settings.cacheMode = WebSettings.LOAD_DEFAULT
         mWebView.settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
 
         mWebView.settings.domStorageEnabled = true
-        mWebView.settings.setAppCacheEnabled(true)
+//        mWebView.settings.setAppCacheEnabled(true)
         mWebView.settings.databaseEnabled = true
         //mWebView.getSettings().setDatabasePath(
         //        this.getFilesDir().getPath() + this.getPackageName() + "/databases/");
@@ -161,12 +157,39 @@ class MainActivity : Activity() {
         // this force use chromeWebClient
         mWebView.settings.setSupportMultipleWindows(false)
         mWebView.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view:WebView, request:WebResourceRequest):Boolean {
+                Log.d(TAG, "[shouldOverrideUrlLoading] new URL: " + request.url!!)
+                if (internetCheck(mContext)) {
+                    // If you want to open url inside then use
+                    view.loadUrl(request.url.toString())
+
+                    // if you wanna open outside of app
+                    /*if (url.contains(URL)) {
+                        view.loadUrl(url)
+                        return false
+                    }else {
+                        // Otherwise, give the default behavior (open in browser)
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        startActivity(intent)
+                        return true
+                    }*/
+                } else {
+                    prgs.visibility = View.GONE
+                    mWebView.visibility = View.GONE
+                    layoutSplash.visibility = View.GONE
+                    layoutNoInternet.visibility = View.VISIBLE
+                }
+
+                return true
+            }
+
+            @Deprecated("It is deprecated in paret")
             override fun shouldOverrideUrlLoading(view: WebView, url: String?): Boolean {
 
-                Log.d(TAG, "URL: " + url!!)
+                Log.d(TAG, "[shouldOverrideUrlLoading] old URL: " + url!!)
                 if (internetCheck(mContext)) {
                     // If you wnat to open url inside then use
-                    view.loadUrl(url);
+                    view.loadUrl(url)
 
                     // if you wanna open outside of app
                     /*if (url.contains(URL)) {
@@ -221,7 +244,7 @@ class MainActivity : Activity() {
                     prgs.visibility = View.GONE
 
                 // check if layoutSplash is still there, get it away!
-                Handler().postDelayed({
+                Handler(Looper.getMainLooper()).postDelayed({
                     layoutSplash.visibility = View.GONE
                     //viewSplash.getBackground().setAlpha(255);
                 }, 2000)
@@ -232,7 +255,7 @@ class MainActivity : Activity() {
         mWebView.webChromeClient = object : WebChromeClient() {
             override fun onShowFileChooser(
                     webView: WebView, filePathCallback: ValueCallback<Array<Uri>>,
-                    fileChooserParams: WebChromeClient.FileChooserParams): Boolean {
+                    fileChooserParams: FileChooserParams): Boolean {
                 if (mFilePathCallback != null) {
                     mFilePathCallback!!.onReceiveValue(null)
                 }
@@ -388,7 +411,7 @@ class MainActivity : Activity() {
         this.doubleBackToExitPressedOnce = true
         Toast.makeText(this, "Please click BACK again to exit", Toast.LENGTH_SHORT).show()
 
-        Handler().postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
+        Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
         return true
     }
 
@@ -401,7 +424,7 @@ class MainActivity : Activity() {
         //for security
         @Throws(NoSuchAlgorithmException::class, InvalidKeySpecException::class)
         fun generateKey(): SecretKey {
-            val random = SecureRandom()
+//            val random = SecureRandom()
             val key = byteArrayOf(1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0)
             //random.nextBytes(key);
             return SecretKeySpec(key, "AES")
@@ -470,21 +493,23 @@ class MainActivity : Activity() {
          * } */
 
         fun internetCheck(context: Context): Boolean {
-            var available = false
-            val connectivity = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-
-            if (connectivity != null) {
-                val networkInfo = connectivity.allNetworkInfo
-                if (networkInfo != null) {
-                    for (i in networkInfo.indices) {
-                        if (networkInfo[i].state == NetworkInfo.State.CONNECTED) {
-                            available = true
-                            break
-                        }
-                    }
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val nw      = connectivityManager.activeNetwork ?: return false
+                val actNw = connectivityManager.getNetworkCapabilities(nw) ?: return false
+                return when {
+                    actNw.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+                    actNw.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+                    //for other device how are able to connect with Ethernet
+                    actNw.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
+                    //for check internet over Bluetooth
+                    actNw.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH) -> true
+                    else -> false
                 }
+            } else {
+                @Suppress("DEPRECATION")
+                return connectivityManager.activeNetworkInfo?.isConnected ?: false
             }
-            return available
         }
     }
 
