@@ -1,3 +1,5 @@
-https://dienynas.tamo.lt/ is an important page for some parents and pupils. The app is an unofficial tamo app. It does just expose the site without any additional bells and whistles. This allows easier control access to the app. 
+https://dienynas.tamo.lt/ is an important page for some parents and pupils. There is payable version of official app in google play.
+
+This App exposes the site as app and allow easier to use and  control access. It is also possible use browser "add to home screen" functionality, but this reduces ability control access.
 
 For an official app with all features, please, search in Google Play Store.
